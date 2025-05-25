@@ -34,11 +34,12 @@ impl Command for Update {
         fs::create_dir_all(&ln_dir)?;
 
         // 3. 更新作業
-        update_repo("compiler", "sb_compiler", &config.channel)?;
-        update_repo("linker", "sb_linker", &config.channel)?;
-        update_repo("assembler", "sb_assembler", &config.channel)?;
-        update_repo("builder", "sb_builder", &config.channel)?;
-        update_repo("debugger", "sb_debugger", &config.channel)?;
+        update_repo("penv-manager", "sb-penvman", &config.channel)?;
+        update_repo("compiler", "sb-compiler", &config.channel)?;
+        update_repo("linker", "sb-linker", &config.channel)?;
+        update_repo("assembler", "sb-assembler", &config.channel)?;
+        update_repo("builder", "sb-builder", &config.channel)?;
+        update_repo("debugger", "sb-debugger", &config.channel)?;
 
         Ok(())
     }
@@ -57,7 +58,7 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
     // 1. アニメーション開始
     let mut spinner = Spinner::new(
         Spinners::Dots,
-        format!("Installing {}\t... ", repo),
+        format!("Installing {:15}... ", repo),
     );
 
     // 2. リポジトリのクローン

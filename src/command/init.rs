@@ -28,7 +28,7 @@ impl Command for Init {
         // 2. 設定ファイル初期化
         fs::write(
             format!("{}/.shinrabansyo/config.toml", home_dir),
-            "channel = \"master\"\n",
+            "channel = \"develop\"\n",
         )?;
 
         // 3. env ファイル初期化
@@ -39,7 +39,7 @@ impl Command for Init {
 
         // 4. 各種ツールチェインの更新
         Update::from(CliOptions::Update).run()?;
-        Default::from(CliOptions::Default { channel: "master".to_string() }).run()?;
+        Default::from(CliOptions::Default { channel: "develop".to_string() }).run()?;
 
         // 5. 完了メッセージ
         println!(r#"+-----------------------------------------------------------------------------------------------+"#);

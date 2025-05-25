@@ -3,7 +3,7 @@ mod config;
 
 use bpaf::Bpaf;
 
-use command::{Command, Default, Init, Update};
+use command::{Command, Default, Init, Update, Show};
 
 #[derive(Debug, Clone, Bpaf)]
 #[bpaf(options, version)]
@@ -21,7 +21,11 @@ pub enum CliOptions {
     Default {
         #[bpaf(positional)]
         channel: String,
-    }
+    },
+
+    /// Show the current configuration
+    #[bpaf(command)]
+    Show,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -30,5 +34,6 @@ fn main() -> anyhow::Result<()> {
         CliOptions::Init => Init::from(opts).run(),
         CliOptions::Update => Update::from(opts).run(),
         CliOptions::Default { .. } => Default::from(opts).run(),
+        CliOptions::Show => Show::from(opts).run(),
     }
 }
