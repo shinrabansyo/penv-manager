@@ -98,11 +98,17 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
         .arg("-executable")
         .output()?
         .stdout;
-    let bin_path = String::from_utf8(bin_path)?;
+    let bin_path = String::from_utf8(bin_path)?
+        .split("\n")
+        .into_iter()
+        .filter(|s| s.contains("sb_"))
+        .next()
+        .unwrap()
+        .to_string();
 
     // 5. シンボリックリンクの配置
     StdCommand::new("ln")
-        .arg("-s")
+        .arg("-sf")
         .arg(&bin_path.trim())
         .arg(&ln_path)
         .output()?;

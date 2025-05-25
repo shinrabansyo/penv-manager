@@ -44,7 +44,7 @@ fn set_symlink(bin: &str, channel: &str) -> anyhow::Result<()> {
     let ln_path = format!("{}/.shinrabansyo/bin/{}", home_dir, bin);
 
     StdCommand::new("ln")
-        .arg("-s")
+        .arg("-sf")
         .arg(&bin_path)
         .arg(&ln_path)
         .output()?;
