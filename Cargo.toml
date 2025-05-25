@@ -1,0 +1,11 @@
+[package]
+name = "sb_penvman"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+anyhow = "1.0.98"
+thiserror = "2.0.12"
+serde = { version = "1.0.219", features = ["derive"] }
+bpaf = { version = "0.9.15", features = ["derive"] }
