@@ -1,7 +1,7 @@
 use std::env;
 use std::fs;
 
-use crate::command::{Command, Update};
+use crate::command::{Command, Update, Default};
 use crate::CliOptions;
 
 #[derive(Debug, Clone)]
@@ -39,6 +39,7 @@ impl Command for Init {
 
         // 4. 各種ツールチェインの更新
         Update::from(CliOptions::Update).run()?;
+        Default::from(CliOptions::Default { channel: "master".to_string() }).run()?;
 
         // 5. 完了メッセージ
         println!(r#"+-----------------------------------------------------------------------------------------------+"#);
