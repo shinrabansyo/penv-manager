@@ -1,7 +1,8 @@
 use std::env;
 use std::fs;
 
-use crate::command::{Command, CliOptions};
+use crate::command::{Command, Update};
+use crate::CliOptions;
 
 #[derive(Debug, Clone)]
 pub struct Init;
@@ -33,8 +34,20 @@ impl Command for Init {
         // 3. env ファイル初期化
         fs::write(
             format!("{}/.shinrabansyo/env", home_dir),
-            "\n",
+            r#"case ":${PATH}:" in *:"$HOME/.shinrabansyo/bin":*) ;; *) export PATH="$HOME/.shinrabansyo/bin:$PATH" ;; esac"#,
         )?;
+
+        // 4. 各種ツールチェインの更新
+        Update::from(CliOptions::Update).run()?;
+
+        // 5. 完了メッセージ
+        println!("");
+        println!(r#"+-----------------------------------------------------------------------------------------------+"#);
+        println!(r#"| Shinrabansyo has been initialized.                                                            |"#);
+        println!(r#"| Please add the following line to your shell configuration file (e.g., ~/.bashrc, ~/.zshrc):   |"#);
+        println!(r#"|    source "$HOME/.shinrabansyo/env"                                                           |"#);
+        println!(r#"| Then, restart your shell to apply the changes.                                                |"#);
+        println!(r#"+-----------------------------------------------------------------------------------------------+"#);
 
         Ok(())
     }

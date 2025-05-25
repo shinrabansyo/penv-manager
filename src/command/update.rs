@@ -2,8 +2,9 @@ use std::env;
 use std::fs;
 use std::process::Command as StdCommand;
 
-use crate::command::{Command, CliOptions};
+use crate::command::Command;
 use crate::config::Config;
+use crate::CliOptions;
 
 #[derive(Debug, Clone)]
 pub struct Update;
