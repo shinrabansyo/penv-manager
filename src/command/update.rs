@@ -1,0 +1,103 @@
+use std::env;
+use std::fs;
+use std::process;
+
+use crate::command::{Command, CliOptions};
+use crate::config::Config;
+
+#[derive(Debug, Clone)]
+pub struct Update;
+
+impl From<CliOptions> for Update {
+    fn from(cmd: CliOptions) -> Self {
+        match cmd {
+            CliOptions::Update => Update,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl Command for Update {
+    fn run(self) -> anyhow::Result<()> {
+        // 1. 設定ファイルの読み込み
+        let config = Config::load()?;
+
+        // 2. リンク配置用ディレクトリを作成
+        let ln_dir = format!(
+            "{}/.shinrabansyo/toolchains/{}",
+            env::var("HOME")?,
+            config.channel,
+        );
+        fs::create_dir_all(&ln_dir)?;
+
+        // 3. 更新作業
+        update_repo("compiler", "sb_compiler", &config.channel)?;
+        update_repo("linker", "sb_linker", &config.channel)?;
+        update_repo("assembler", "sb_assembler", &config.channel)?;
+        update_repo("builder", "sb_builder", &config.channel)?;
+        update_repo("debugger", "sb_debugger", &config.channel)?;
+
+        Ok(())
+    }
+}
+
+fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
+    let home_dir = env::var("HOME")?;
+    let repo_par_path = format!("{}/.shinrabansyo/repos", home_dir);
+    let repo_path = format!("{}/.shinrabansyo/repos/{}", home_dir, repo);
+    let repo_url = format!("git@github.com:shinrabansyo/{}.git", repo);
+    let target_path = format!("{}/.shinrabansyo/repos/{}/target/release", home_dir, repo);
+    let ln_path = format!("{}/.shinrabansyo/toolchains/{}/{}", home_dir, channel, bin);
+
+    // 1. リポジトリのクローン
+    if !fs::exists(&repo_path)? {
+        println!("Downloading {} ...", repo);
+        process::Command::new("git")
+            .arg("clone")
+            .arg(&repo_url)
+            .current_dir(&repo_par_path)
+            .output()?;
+    }
+
+    // 2. リポジトリの更新
+    println!("Updating {} ... ", repo);
+    process::Command::new("git")
+        .arg("pull")
+        .arg("origin")
+        .arg(format!("{}:{}", channel, channel))
+        .current_dir(&repo_path)
+        .output()?;
+    process::Command::new("git")
+        .arg("checkout")
+        .arg(channel)
+        .current_dir(&repo_path)
+        .output()?;
+
+    // 3. コンパイル
+    process::Command::new("cargo")
+        .arg("build")
+        .arg("--release")
+        .current_dir(&repo_path)
+        .output()?;
+
+    // 4. コンパイル結果のパスを取得
+    let bin_path = process::Command::new("find")
+        .arg(&target_path)
+        .arg("-maxdepth")
+        .arg("1")
+        .arg("-type")
+        .arg("f")
+        .arg("-executable")
+        .output()?
+        .stdout;
+    let bin_path = String::from_utf8(bin_path)?;
+
+    // 5. シンボリックリンクの配置
+    process::Command::new("ln")
+        .arg("-s")
+        .arg(&bin_path.trim())
+        .arg(&ln_path)
+        .output()?;
+
+    Ok(())
+}

@@ -9,3 +9,4 @@ anyhow = "1.0.98"
 thiserror = "2.0.12"
 serde = { version = "1.0.219", features = ["derive"] }
 bpaf = { version = "0.9.15", features = ["derive"] }
+toml = "0.8.20"

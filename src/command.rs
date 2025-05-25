@@ -1,6 +1,8 @@
 mod init;
+mod update;
 
 pub use init::Init;
+pub use update::Update;
 
 use crate::CliOptions;
 

@@ -1,8 +1,9 @@
 mod command;
+mod config;
 
 use bpaf::Bpaf;
 
-use command::{Command, Init};
+use command::{Command, Init, Update};
 
 #[derive(Debug, Clone, Bpaf)]
 #[bpaf(options, version)]
@@ -27,7 +28,7 @@ fn main() -> anyhow::Result<()> {
     let opts = cli_options().run();
     match opts {
         CliOptions::Init => Init::from(opts).run(),
-        CliOptions::Update => todo!(),
+        CliOptions::Update => Update::from(opts).run(),
         CliOptions::Default { .. } => todo!(),
     }
 }
