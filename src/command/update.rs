@@ -1,6 +1,6 @@
 use std::env;
 use std::fs;
-use std::process;
+use std::process::Command as StdCommand;
 
 use crate::command::{Command, CliOptions};
 use crate::config::Config;
@@ -52,7 +52,7 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
     // 1. リポジトリのクローン
     if !fs::exists(&repo_path)? {
         println!("Downloading {} ...", repo);
-        process::Command::new("git")
+        StdCommand::new("git")
             .arg("clone")
             .arg(&repo_url)
             .current_dir(&repo_par_path)
@@ -61,27 +61,27 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
 
     // 2. リポジトリの更新
     println!("Updating {} ... ", repo);
-    process::Command::new("git")
+    StdCommand::new("git")
         .arg("pull")
         .arg("origin")
         .arg(format!("{}:{}", channel, channel))
         .current_dir(&repo_path)
         .output()?;
-    process::Command::new("git")
+    StdCommand::new("git")
         .arg("checkout")
         .arg(channel)
         .current_dir(&repo_path)
         .output()?;
 
     // 3. コンパイル
-    process::Command::new("cargo")
+    StdCommand::new("cargo")
         .arg("build")
         .arg("--release")
         .current_dir(&repo_path)
         .output()?;
 
     // 4. コンパイル結果のパスを取得
-    let bin_path = process::Command::new("find")
+    let bin_path = StdCommand::new("find")
         .arg(&target_path)
         .arg("-maxdepth")
         .arg("1")
@@ -93,7 +93,7 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
     let bin_path = String::from_utf8(bin_path)?;
 
     // 5. シンボリックリンクの配置
-    process::Command::new("ln")
+    StdCommand::new("ln")
         .arg("-s")
         .arg(&bin_path.trim())
         .arg(&ln_path)

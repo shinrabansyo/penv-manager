@@ -1,5 +1,5 @@
 use std::env;
-use std::process;
+use std::process::Command as StdCommand;
 
 use crate::command::{Command, CliOptions};
 use crate::config::Config;
@@ -43,7 +43,7 @@ fn set_symlink(bin: &str, channel: &str) -> anyhow::Result<()> {
     let bin_path = format!("{}/.shinrabansyo/toolchains/{}/{}", home_dir, channel, bin);
     let ln_path = format!("{}/.shinrabansyo/bin/{}", home_dir, bin);
 
-    process::Command::new("ln")
+    StdCommand::new("ln")
         .arg("-s")
         .arg(&bin_path)
         .arg(&ln_path)
