@@ -20,6 +20,7 @@ impl Command for Init {
         let home_dir = env::var("HOME")?;
 
         // 1. ディレクトリ作成
+        fs::create_dir_all(format!("{}/.shinrabansyo/bin", home_dir))?;
         fs::create_dir_all(format!("{}/.shinrabansyo/repos", home_dir))?;
         fs::create_dir_all(format!("{}/.shinrabansyo/toolchains", home_dir))?;
 

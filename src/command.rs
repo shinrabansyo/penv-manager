@@ -1,6 +1,8 @@
+mod default;
 mod init;
 mod update;
 
+pub use default::Default;
 pub use init::Init;
 pub use update::Update;
 

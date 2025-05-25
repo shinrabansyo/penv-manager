@@ -15,4 +15,11 @@ impl Config {
         let config = toml::from_str::<Config>(&config)?;
         Ok(config)
     }
+
+    pub fn store(&self) -> anyhow::Result<()> {
+        let path = format!("{}/.shinrabansyo/config.toml", env::var("HOME")?);
+        let content = toml::to_string(self)?;
+        fs::write(path, content)?;
+        Ok(())
+    }
 }
