@@ -29,12 +29,12 @@ impl Command for Default {
         config.store()?;
 
         // 3. シンボリックリンクを更新
-        set_symlink("sb_penvman", &config.channel)?;
-        set_symlink("sb_compiler", &config.channel)?;
-        set_symlink("sb_linker", &config.channel)?;
-        set_symlink("sb_assembler", &config.channel)?;
-        set_symlink("sb_builder", &config.channel)?;
-        set_symlink("sb_debugger", &config.channel)?;
+        set_symlink("sb-penvman", &config.channel)?;
+        set_symlink("sb-compiler", &config.channel)?;
+        set_symlink("sb-linker", &config.channel)?;
+        set_symlink("sb-assembler", &config.channel)?;
+        set_symlink("sb-builder", &config.channel)?;
+        set_symlink("sb-debugger", &config.channel)?;
 
         Ok(())
     }
