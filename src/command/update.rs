@@ -37,15 +37,19 @@ impl Command for Update {
         update_repo("builder", "sb_builder", &config.channel)?;
         update_repo("debugger", "sb_debugger", &config.channel)?;
 
+        println!("All done!");
+
         Ok(())
     }
 }
 
 fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
+    const GIT_NO_CREDENTIAL_OPT: &str = "credential.helper='!f() { cat > /dev/null; echo username=; echo password=; }; f'";
+
     let home_dir = env::var("HOME")?;
     let repo_par_path = format!("{}/.shinrabansyo/repos", home_dir);
     let repo_path = format!("{}/.shinrabansyo/repos/{}", home_dir, repo);
-    let repo_url = format!("git@github.com:shinrabansyo/{}.git", repo);
+    let repo_url = format!("https://github.com/shinrabansyo/{}", repo);
     let target_path = format!("{}/.shinrabansyo/repos/{}/target/release", home_dir, repo);
     let ln_path = format!("{}/.shinrabansyo/toolchains/{}/{}", home_dir, channel, bin);
 
@@ -53,6 +57,8 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
     if !fs::exists(&repo_path)? {
         println!("Downloading {} ...", repo);
         StdCommand::new("git")
+            .arg("-c")
+            .arg(GIT_NO_CREDENTIAL_OPT)
             .arg("clone")
             .arg(&repo_url)
             .current_dir(&repo_par_path)
@@ -62,6 +68,8 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
     // 2. リポジトリの更新
     println!("Updating {} ... ", repo);
     StdCommand::new("git")
+        .arg("-c")
+        .arg(GIT_NO_CREDENTIAL_OPT)
         .arg("pull")
         .arg("origin")
         .arg(format!("{}:{}", channel, channel))
