@@ -34,18 +34,18 @@ impl Command for Update {
         fs::create_dir_all(&ln_dir)?;
 
         // 3. 更新作業
-        update_repo("penv-manager", "sb-penvman", &config.channel)?;
-        update_repo("compiler", "sb-compiler", &config.channel)?;
-        update_repo("linker", "sb-linker", &config.channel)?;
-        update_repo("assembler", "sb-assembler", &config.channel)?;
-        update_repo("builder", "sb-builder", &config.channel)?;
-        update_repo("debugger", "sb-debugger", &config.channel)?;
+        update_repo(&config.channel, "penv-manager")?;
+        update_repo(&config.channel, "compiler")?;
+        update_repo(&config.channel, "linker")?;
+        update_repo(&config.channel, "assembler")?;
+        update_repo(&config.channel, "emulator")?;
+        update_repo(&config.channel, "builder")?;
 
         Ok(())
     }
 }
 
-fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
+fn update_repo(channel: &str, repo: &str) -> anyhow::Result<()> {
     const GIT_NO_CREDENTIAL_OPT: &str = "credential.helper='!f() { cat > /dev/null; echo username=; echo password=; }; f'";
 
     let home_dir = env::var("HOME")?;
@@ -53,7 +53,7 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
     let repo_path = format!("{}/.shinrabansyo/repos/{}", home_dir, repo);
     let repo_url = format!("https://github.com/shinrabansyo/{}", repo);
     let target_path = format!("{}/.shinrabansyo/repos/{}/target/release", home_dir, repo);
-    let ln_path = format!("{}/.shinrabansyo/toolchains/{}/{}", home_dir, channel, bin);
+    let ln_dir = format!("{}/.shinrabansyo/toolchains/{}", home_dir, channel);
 
     // 1. アニメーション開始
     let mut spinner = Spinner::new(
@@ -104,20 +104,24 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
         .arg("-executable")
         .output()?
         .stdout;
-    let bin_path = String::from_utf8(bin_path)?
+    let bin_paths = String::from_utf8(bin_path)?;
+    let bin_paths = bin_paths
         .split("\n")
         .into_iter()
-        .filter(|s| s.contains("sb_"))
-        .next()
-        .unwrap()
-        .to_string();
+        .filter(|s| s.contains("sb_") && !s.contains(".so"))
+        .map(|s| s.trim());
 
     // 6. シンボリックリンクの配置
-    StdCommand::new("ln")
-        .arg("-sf")
-        .arg(&bin_path.trim())
-        .arg(&ln_path)
-        .output()?;
+    for bin_path in bin_paths {
+        let bin_name = bin_path.split("/").last().unwrap();
+        let ln_path = format!("{}/{}", ln_dir, bin_name);
+
+        StdCommand::new("ln")
+            .arg("-sf")
+            .arg(&bin_path)
+            .arg(&ln_path)
+            .output()?;
+    }
 
     // 7. アニメーションの後処理
     spinner.stop();
