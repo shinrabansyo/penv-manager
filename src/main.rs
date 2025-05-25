@@ -1,4 +1,8 @@
+mod command;
+
 use bpaf::Bpaf;
+
+use command::{Command, Init};
 
 #[derive(Debug, Clone, Bpaf)]
 #[bpaf(options, version)]
@@ -22,7 +26,7 @@ pub enum CliOptions {
 fn main() -> anyhow::Result<()> {
     let opts = cli_options().run();
     match opts {
-        CliOptions::Init => todo!(),
+        CliOptions::Init => Init::from(opts).run(),
         CliOptions::Update => todo!(),
         CliOptions::Default { .. } => todo!(),
     }
