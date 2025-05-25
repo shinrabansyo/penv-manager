@@ -2,6 +2,8 @@ use std::env;
 use std::fs;
 use std::process::Command as StdCommand;
 
+use spinners::{Spinner, Spinners};
+
 use crate::command::Command;
 use crate::config::Config;
 use crate::CliOptions;
@@ -38,8 +40,6 @@ impl Command for Update {
         update_repo("builder", "sb_builder", &config.channel)?;
         update_repo("debugger", "sb_debugger", &config.channel)?;
 
-        println!("All done!");
-
         Ok(())
     }
 }
@@ -54,9 +54,14 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
     let target_path = format!("{}/.shinrabansyo/repos/{}/target/release", home_dir, repo);
     let ln_path = format!("{}/.shinrabansyo/toolchains/{}/{}", home_dir, channel, bin);
 
-    // 1. リポジトリのクローン
+    // 1. アニメーション開始
+    let mut spinner = Spinner::new(
+        Spinners::Dots,
+        format!("Installing {}\t... ", repo),
+    );
+
+    // 2. リポジトリのクローン
     if !fs::exists(&repo_path)? {
-        println!("Downloading {} ...", repo);
         StdCommand::new("git")
             .arg("-c")
             .arg(GIT_NO_CREDENTIAL_OPT)
@@ -66,8 +71,7 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
             .output()?;
     }
 
-    // 2. リポジトリの更新
-    println!("Updating {} ... ", repo);
+    // 3. リポジトリの更新
     StdCommand::new("git")
         .arg("-c")
         .arg(GIT_NO_CREDENTIAL_OPT)
@@ -82,14 +86,14 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
         .current_dir(&repo_path)
         .output()?;
 
-    // 3. コンパイル
+    // 4. コンパイル
     StdCommand::new("cargo")
         .arg("build")
         .arg("--release")
         .current_dir(&repo_path)
         .output()?;
 
-    // 4. コンパイル結果のパスを取得
+    // 5. コンパイル結果のパスを取得
     let bin_path = StdCommand::new("find")
         .arg(&target_path)
         .arg("-maxdepth")
@@ -107,12 +111,16 @@ fn update_repo(repo: &str, bin: &str, channel: &str) -> anyhow::Result<()> {
         .unwrap()
         .to_string();
 
-    // 5. シンボリックリンクの配置
+    // 6. シンボリックリンクの配置
     StdCommand::new("ln")
         .arg("-sf")
         .arg(&bin_path.trim())
         .arg(&ln_path)
         .output()?;
+
+    // 7. アニメーションの後処理
+    spinner.stop();
+    println!("Ok");
 
     Ok(())
 }

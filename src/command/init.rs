@@ -41,7 +41,6 @@ impl Command for Init {
         Update::from(CliOptions::Update).run()?;
 
         // 5. 完了メッセージ
-        println!("");
         println!(r#"+-----------------------------------------------------------------------------------------------+"#);
         println!(r#"| Shinrabansyo has been initialized.                                                            |"#);
         println!(r#"| Please add the following line to your shell configuration file (e.g., ~/.bashrc, ~/.zshrc):   |"#);
