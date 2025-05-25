@@ -12,9 +12,10 @@ curl --proto '=https' --tlsv1.2 -sSf https://shinrabansyo.github.io/penv-manager
 
 - `sb-penvman` : 本ツール
 - `sb-compiler` : コンパイラ ([GitHub Repo](https://github.com/shinrabansyo/compiler))
-- `sb-linker` : リンカー ([GitHub Repo](https://github.com/shinrabansyo/linker))
+- `sb-linker` : リンカ ([GitHub Repo](https://github.com/shinrabansyo/linker))
 - `sb-assembler` : アセンブラ ([GitHub Repo](https://github.com/shinrabansyo/assembler))
-- `sb-debugger` : デバッガ ([GitHub Repo](https://github.com/shinrabansyo/debugger))
+- `sb-emulator-cli` : エミュレータ (CLI) ([GitHub Repo](https://github.com/shinrabansyo/emulator))
+- `sb-emulator-tui` : エミュレータ (TUI) ([GitHub Repo](https://github.com/shinrabansyo/emulator))
 - `sb-builder` : ビルドシステム ([GitHub Repo](https://github.com/shinrabansyo/builder))
 
 ## Command
@@ -31,5 +32,5 @@ $ sb-penvman COMMAND
 ## Note
 
 - Linux 環境での実行を前提としています
-- `git`，`cargo` が必要です
+- `git`，`cargo(nightly)` が必要です
 - 各種ファイルは `~/.shinrabansyo` にインストールされます
