@@ -68,7 +68,8 @@ fn update_repo(channel: &str, repo_name: &str) -> anyhow::Result<()> {
 
     // 2. リポジトリ取得
     set_status("checking updates")?;
-    let repo = Repository::sync_repo(channel, repo_name)?;
+    let mut repo = Repository::new(channel, repo_name)?;
+    repo.sync_repo()?;
     if !repo.check_updated()? {
         finish_spinner("Skipped")?;
         return Ok(());

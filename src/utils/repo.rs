@@ -5,28 +5,35 @@ use std::process::Command as StdCommand;
 use chrono::{DateTime, FixedOffset};
 use git2::{BranchType, Repository as Git2Repository};
 
-pub struct Repository {
-    name: String,
+pub struct Repository<'a> {
+    channel: &'a str,
+    name: &'a str,
     git_repo: Git2Repository,
 }
 
-impl Repository {
-    pub fn sync_repo(channel: &str, repo_name: &str) -> anyhow::Result<Repository> {
-        const GIT_NO_CREDENTIAL_OPT: &str = "credential.helper='!f() { cat > /dev/null; echo username=; echo password=; }; f'";
-
+impl<'a> Repository<'a> {
+    pub fn new(channel: &'a str, name: &'a str) -> anyhow::Result<Repository<'a>> {
         let home_dir = env::var("HOME")?;
-        let repo_path = format!("{}/.shinrabansyo/repos/{}", home_dir, repo_name);
-        let repo_url = format!("https://github.com/shinrabansyo/{}", repo_name);
-        let branch_channel = format!("origin/{}", channel);
+        let repo_path = format!("{}/.shinrabansyo/repos/{}", home_dir, name);
+        let repo_url = format!("https://github.com/shinrabansyo/{}", name);
 
-        // 1. リポジトリ取得
         let git_repo = if !fs::exists(&repo_path)? {
             Git2Repository::clone(&repo_url, &repo_path)?
         } else {
             Git2Repository::open(&repo_path)?
         };
 
-        // 2. リポジトリの更新
+        Ok(Repository { channel, name, git_repo })
+    }
+
+    pub fn sync_repo(&mut self) -> anyhow::Result<()> {
+        const GIT_NO_CREDENTIAL_OPT: &str = "credential.helper='!f() { cat > /dev/null; echo username=; echo password=; }; f'";
+
+        let home_dir = env::var("HOME")?;
+        let repo_path = format!("{}/.shinrabansyo/repos/{}", home_dir, self.name);
+        let branch_channel = format!("origin/{}", self.channel);
+
+        // 1. リポジトリの更新
         StdCommand::new("git")
             .arg("-c")
             .arg(GIT_NO_CREDENTIAL_OPT)
@@ -34,8 +41,8 @@ impl Repository {
             .current_dir(&repo_path)
             .output()?;
 
-        // 3. ビルド対象ブランチが存在するか確認
-        let has_channel_branch = git_repo
+        // 2. ビルド対象ブランチが存在するか確認
+        let has_channel_branch = self.git_repo
             .branches(None)?
             .into_iter()
             .filter_map(Result::ok)
@@ -43,26 +50,24 @@ impl Repository {
             .find(|(branch, _)| branch.name().unwrap().unwrap() == branch_channel)
             .is_some();
         if !has_channel_branch {
-            return Repository::sync_repo("master", repo_name);
+            self.channel = "master";
+            return self.sync_repo();
         }
 
-        // 4. ビルド対象ブランチ選択
+        // 3. ビルド対象ブランチ選択
         StdCommand::new("git")
             .arg("merge")
             .arg(branch_channel)
-            .arg(channel)
+            .arg(self.channel)
             .current_dir(&repo_path)
             .output()?;
         StdCommand::new("git")
             .arg("checkout")
-            .arg(channel)
+            .arg(self.channel)
             .current_dir(&repo_path)
             .output()?;
 
-        Ok(Repository {
-            name: repo_name.to_string(),
-            git_repo,
-        })
+        Ok(())
     }
 
     pub fn version(&self) -> anyhow::Result<String> {
