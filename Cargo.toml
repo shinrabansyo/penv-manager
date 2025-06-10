@@ -1,6 +1,6 @@
 [package]
 name = "sb_penvman_cli"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 
 [dependencies]
@@ -11,3 +11,5 @@ serde = { version = "1.0.219", features = ["derive"] }
 bpaf = { version = "0.9.15", features = ["derive"] }
 toml = "0.8.20"
 spinners = "4.1.1"
+git2 = "0.20.2"
+chrono = "0.4.41"
