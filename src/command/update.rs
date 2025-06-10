@@ -1,7 +1,12 @@
 use std::env;
 use std::fs;
+use std::io::Write;
 use std::process::Command as StdCommand;
+use std::thread;
+use std::time::Duration;
 
+use chrono::{DateTime, FixedOffset};
+use git2::{BranchType, Repository};
 use spinners::{Spinner, Spinners};
 
 use crate::command::Command;
@@ -46,12 +51,9 @@ impl Command for Update {
 }
 
 fn update_repo(channel: &str, repo: &str) -> anyhow::Result<()> {
-    const GIT_NO_CREDENTIAL_OPT: &str = "credential.helper='!f() { cat > /dev/null; echo username=; echo password=; }; f'";
-
     let home_dir = env::var("HOME")?;
-    let repo_par_path = format!("{}/.shinrabansyo/repos", home_dir);
+    let repo_head_path = format!("{}/.shinrabansyo/repos/{}.head", home_dir, repo);
     let repo_path = format!("{}/.shinrabansyo/repos/{}", home_dir, repo);
-    let repo_url = format!("https://github.com/shinrabansyo/{}", repo);
     let target_path = format!("{}/.shinrabansyo/repos/{}/target/release", home_dir, repo);
     let ln_dir = format!("{}/.shinrabansyo/toolchains/{}", home_dir, channel);
 
@@ -60,34 +62,28 @@ fn update_repo(channel: &str, repo: &str) -> anyhow::Result<()> {
         Spinners::Dots,
         format!("Installing {:15}... ", repo),
     );
+    let mut finish_spinner = |msg: &str| -> anyhow::Result<()> {
+        spinner.stop();
+        set_status(msg)?;
+        println!("");
+        Ok(())
+    };
+    thread::sleep(Duration::from_millis(100));
 
-    // 2. リポジトリのクローン
-    if !fs::exists(&repo_path)? {
-        StdCommand::new("git")
-            .arg("-c")
-            .arg(GIT_NO_CREDENTIAL_OPT)
-            .arg("clone")
-            .arg(&repo_url)
-            .current_dir(&repo_par_path)
-            .output()?;
+    // 2. リポジトリ取得
+    set_status("checking updates")?;
+    let git_repo = sync_repo(repo, channel)?;
+
+    // 3. 更新の有無を確認
+    let old_head = fs::read_to_string(&repo_head_path).unwrap_or_default();
+    let head_commit = git_repo.head()?.peel_to_commit()?;
+    if old_head == head_commit.id().to_string() {
+        finish_spinner("Skipped")?;
+        return Ok(());
     }
 
-    // 3. リポジトリの更新
-    StdCommand::new("git")
-        .arg("-c")
-        .arg(GIT_NO_CREDENTIAL_OPT)
-        .arg("pull")
-        .arg("origin")
-        .arg(format!("{}:{}", channel, channel))
-        .current_dir(&repo_path)
-        .output()?;
-    StdCommand::new("git")
-        .arg("checkout")
-        .arg(channel)
-        .current_dir(&repo_path)
-        .output()?;
-
     // 4. コンパイル
+    set_status("building")?;
     StdCommand::new("cargo")
         .arg("build")
         .arg("--release")
@@ -123,9 +119,73 @@ fn update_repo(channel: &str, repo: &str) -> anyhow::Result<()> {
             .output()?;
     }
 
-    // 7. アニメーションの後処理
-    spinner.stop();
-    println!("Ok");
+    // 7. head ファイルの更新
+    fs::write(&repo_head_path, head_commit.id().to_string())?;
 
+    // 8. アニメーションの後処理
+    let new_head_datetime = DateTime::from_timestamp(head_commit.time().seconds(), 0)
+        .unwrap()
+        .with_timezone(&FixedOffset::east_opt(9 * 3600).unwrap())
+        .format("%Y-%m-%d %H:%M:%S");
+    let finish_msg = format!("Ok (version: {})", new_head_datetime);
+    finish_spinner(&finish_msg)?;
+
+    Ok(())
+}
+
+fn sync_repo(repo: &str, channel: &str) -> anyhow::Result<Repository> {
+    const GIT_NO_CREDENTIAL_OPT: &str = "credential.helper='!f() { cat > /dev/null; echo username=; echo password=; }; f'";
+
+    let home_dir = env::var("HOME")?;
+    let repo_path = format!("{}/.shinrabansyo/repos/{}", home_dir, repo);
+    let repo_url = format!("https://github.com/shinrabansyo/{}", repo);
+    let branch_channel = format!("origin/{}", channel);
+
+    // 1. リポジトリ取得
+    let git_repo = if !fs::exists(&repo_path)? {
+        Repository::clone(&repo_url, &repo_path)?
+    } else {
+        Repository::open(&repo_path)?
+    };
+
+    // 2. リポジトリの更新
+    StdCommand::new("git")
+        .arg("-c")
+        .arg(GIT_NO_CREDENTIAL_OPT)
+        .arg("fetch")
+        .current_dir(&repo_path)
+        .output()?;
+
+    // 3. ビルド対象ブランチが存在するか確認
+    let has_channel_branch = git_repo
+        .branches(None)?
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|(_, branch_type)| branch_type == &BranchType::Remote)
+        .find(|(branch, _)| branch.name().unwrap().unwrap() == branch_channel)
+        .is_some();
+    if !has_channel_branch {
+        return sync_repo(repo, "master");
+    }
+
+    // 4. ビルド対象ブランチ選択
+    StdCommand::new("git")
+        .arg("merge")
+        .arg(branch_channel)
+        .arg(channel)
+        .current_dir(&repo_path)
+        .output()?;
+    StdCommand::new("git")
+        .arg("checkout")
+        .arg(channel)
+        .current_dir(&repo_path)
+        .output()?;
+
+    Ok(git_repo)
+}
+
+fn set_status(stat: &str) -> anyhow::Result<()> {
+    print!("{:20}", stat);
+    std::io::stdout().flush()?;
     Ok(())
 }
