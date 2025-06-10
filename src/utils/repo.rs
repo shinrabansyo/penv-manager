@@ -95,10 +95,11 @@ impl<'a> Repository<'a> {
         Ok(old_head != head)
     }
 
-    pub fn build(&self) -> anyhow::Result<Vec<String>> {
+    pub fn build(&self) -> anyhow::Result<()> {
         let home_dir = env::var("HOME")?;
         let target_path = format!("{}/.shinrabansyo/repos/{}/target/release", home_dir, self.name);
         let repo_head_path = format!("{}/.shinrabansyo/repos/{}.head", home_dir, self.name);
+        let ln_dir = format!("{}/.shinrabansyo/toolchains/{}", home_dir, self.channel);
 
         // 1. ビルド
         StdCommand::new("cargo")
@@ -125,7 +126,19 @@ impl<'a> Repository<'a> {
             .map(|s| s.trim().to_string())
             .collect::<Vec<_>>();
 
-        // 3. head ファイルの更新
+        // 3. シンボリックリンクの配置
+        for bin_path in bin_paths {
+            let bin_name = bin_path.split("/").last().unwrap();
+            let ln_path = format!("{}/{}", ln_dir, bin_name);
+
+            StdCommand::new("ln")
+                .arg("-sf")
+                .arg(&bin_path)
+                .arg(&ln_path)
+                .output()?;
+        }
+
+        // 4. head ファイルの更新
         let head = self.git_repo
             .head()?
             .peel_to_commit()?
@@ -133,6 +146,6 @@ impl<'a> Repository<'a> {
             .to_string();
         fs::write(repo_head_path, &head)?;
 
-        Ok(bin_paths)
+        Ok(())
     }
 }

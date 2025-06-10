@@ -1,7 +1,6 @@
 use std::env;
 use std::fs;
 use std::io::Write;
-use std::process::Command as StdCommand;
 use std::thread;
 use std::time::Duration;
 
@@ -50,9 +49,6 @@ impl Command for Update {
 }
 
 fn update_repo(channel: &str, repo_name: &str) -> anyhow::Result<()> {
-    let home_dir = env::var("HOME")?;
-    let ln_dir = format!("{}/.shinrabansyo/toolchains/{}", home_dir, channel);
-
     // 1. アニメーション開始
     let mut spinner = Spinner::new(
         Spinners::Dots,
@@ -75,23 +71,11 @@ fn update_repo(channel: &str, repo_name: &str) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    // 3. コンパイル
+    // 3. ビルド
     set_status("building")?;
-    let bin_paths = repo.build()?;
+    repo.build()?;
 
-    // 4. シンボリックリンクの配置
-    for bin_path in bin_paths {
-        let bin_name = bin_path.split("/").last().unwrap();
-        let ln_path = format!("{}/{}", ln_dir, bin_name);
-
-        StdCommand::new("ln")
-            .arg("-sf")
-            .arg(&bin_path)
-            .arg(&ln_path)
-            .output()?;
-    }
-
-    // 5. アニメーションの後処理
+    // 4. アニメーションの後処理
     let finish_msg = format!("Ok (version: {})", repo.version()?);
     finish_spinner(&finish_msg)?;
 
