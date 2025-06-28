@@ -12,12 +12,14 @@ use crate::utils::repo::Repository;
 use crate::CliOptions;
 
 #[derive(Debug, Clone)]
-pub struct Update;
+pub struct Update {
+    force: bool,
+}
 
 impl From<CliOptions> for Update {
     fn from(cmd: CliOptions) -> Self {
         match cmd {
-            CliOptions::Update => Update,
+            CliOptions::Update { force } => Update { force },
             _ => unreachable!(),
         }
     }
@@ -37,18 +39,18 @@ impl Command for Update {
         fs::create_dir_all(&ln_dir)?;
 
         // 3. 更新作業
-        update_repo(&config.channel, "penv-manager")?;
-        update_repo(&config.channel, "compiler")?;
-        update_repo(&config.channel, "linker")?;
-        update_repo(&config.channel, "assembler")?;
-        update_repo(&config.channel, "emulator")?;
-        update_repo(&config.channel, "builder")?;
+        update_repo(&config.channel, self.force, "penv-manager")?;
+        update_repo(&config.channel, self.force, "compiler")?;
+        update_repo(&config.channel, self.force, "linker")?;
+        update_repo(&config.channel, self.force, "assembler")?;
+        update_repo(&config.channel, self.force, "emulator")?;
+        update_repo(&config.channel, self.force, "builder")?;
 
         Ok(())
     }
 }
 
-fn update_repo(channel: &str, repo_name: &str) -> anyhow::Result<()> {
+fn update_repo(channel: &str, force: bool, repo_name: &str) -> anyhow::Result<()> {
     // 1. アニメーション開始
     let mut spinner = Spinner::new(
         Spinners::Dots,
@@ -66,7 +68,7 @@ fn update_repo(channel: &str, repo_name: &str) -> anyhow::Result<()> {
     set_status("checking updates")?;
     let mut repo = Repository::new(channel, repo_name)?;
     repo.sync_repo()?;
-    if !repo.check_updated()? {
+    if !force && !repo.check_updated()? {
         finish_spinner("Skipped")?;
         return Ok(());
     }
