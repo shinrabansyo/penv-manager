@@ -9,6 +9,7 @@ pub struct Repository<'a> {
     channel: &'a str,
     name: &'a str,
     git_repo: Git2Repository,
+    git_branch: &'a str,
 }
 
 impl<'a> Repository<'a> {
@@ -23,7 +24,7 @@ impl<'a> Repository<'a> {
             Git2Repository::open(&repo_path)?
         };
 
-        Ok(Repository { channel, name, git_repo })
+        Ok(Repository { channel, name, git_repo, git_branch: channel })
     }
 
     pub fn sync_repo(&mut self) -> anyhow::Result<()> {
@@ -31,7 +32,7 @@ impl<'a> Repository<'a> {
 
         let home_dir = env::var("HOME")?;
         let repo_path = format!("{}/.shinrabansyo/repos/{}", home_dir, self.name);
-        let branch_channel = format!("origin/{}", self.channel);
+        let branch_channel = format!("origin/{}", self.git_branch);
 
         // 1. リポジトリの更新
         StdCommand::new("git")
@@ -50,7 +51,7 @@ impl<'a> Repository<'a> {
             .find(|(branch, _)| branch.name().unwrap().unwrap() == branch_channel)
             .is_some();
         if !has_channel_branch {
-            self.channel = "master";
+            self.git_branch = "master";
             return self.sync_repo();
         }
 
@@ -58,12 +59,12 @@ impl<'a> Repository<'a> {
         StdCommand::new("git")
             .arg("merge")
             .arg(branch_channel)
-            .arg(self.channel)
+            .arg(self.git_branch)
             .current_dir(&repo_path)
             .output()?;
         StdCommand::new("git")
             .arg("checkout")
-            .arg(self.channel)
+            .arg(self.git_branch)
             .current_dir(&repo_path)
             .output()?;
 
