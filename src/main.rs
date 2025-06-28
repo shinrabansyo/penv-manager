@@ -15,7 +15,10 @@ pub enum CliOptions {
 
     /// Update the all toolchains
     #[bpaf(command)]
-    Update,
+    Update {
+        #[bpaf(short, long, switch)]
+        force: bool,
+    },
 
     /// Set the default channel
     #[bpaf(command)]
@@ -33,7 +36,7 @@ fn main() -> anyhow::Result<()> {
     let opts = cli_options().run();
     match opts {
         CliOptions::Init => Init::from(opts).run(),
-        CliOptions::Update => Update::from(opts).run(),
+        CliOptions::Update { .. } => Update::from(opts).run(),
         CliOptions::Default { .. } => Default::from(opts).run(),
         CliOptions::Show => Show::from(opts).run(),
     }

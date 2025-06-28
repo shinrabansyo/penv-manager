@@ -38,7 +38,7 @@ impl Command for Init {
         )?;
 
         // 4. 各種ツールチェインの更新
-        Update::from(CliOptions::Update).run()?;
+        Update::from(CliOptions::Update { force: true }).run()?;
         Default::from(CliOptions::Default { channel: "develop".to_string() }).run()?;
 
         // 5. 完了メッセージ
