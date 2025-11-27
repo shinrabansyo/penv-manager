@@ -33,6 +33,7 @@ impl Command for Show {
             ("assembler", repo_version(&config, "assembler")?),
             ("emulator", repo_version(&config, "emulator")?),
             ("builder", repo_version(&config, "builder")?),
+            ("binutils", repo_version(&config, "binutils")?),
         ];
         spinner.stop();
 
