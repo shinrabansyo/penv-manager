@@ -36,6 +36,7 @@ impl Command for Default {
         set_symlink(&config.channel, "sb_emulator_cli", "sb-emulator-cli")?;
         set_symlink(&config.channel, "sb_emulator_tui", "sb-emulator-tui")?;
         set_symlink(&config.channel, "sb_builder_cli", "sb-builder")?;
+        set_symlink(&config.channel, "sb_objdump_cli", "sb-objdump")?;
 
         Ok(())
     }
