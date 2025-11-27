@@ -45,6 +45,7 @@ impl Command for Update {
         update_repo(&config.channel, self.force, "assembler")?;
         update_repo(&config.channel, self.force, "emulator")?;
         update_repo(&config.channel, self.force, "builder")?;
+        update_repo(&config.channel, self.force, "binutils")?;
 
         Ok(())
     }
